@@ -13,7 +13,6 @@ namespace stocks_api.Repository
         public GlobalQuotesRepository()
         {
             _connection = "Server=DESKTOP-L172TAI;Database=stock;User Id=STOCK;Password=STOCKAPI;";
-
         }
 
         public async Task<List<GlobalQuotes>> GetGlobalQuotes(string symbol)
