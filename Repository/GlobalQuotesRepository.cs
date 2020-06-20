@@ -16,9 +16,8 @@ namespace stocks_api.Repository
 
         }
 
-        public async Task <List<GlobalQuotes>> GetGlobalQuotes(string symbol)
+        public async Task<List<GlobalQuotes>> GetGlobalQuotes(string symbol)
         {
-            GlobalQuotes global = new GlobalQuotes();
             var list = new List<GlobalQuotes>();
             try
             {
@@ -29,32 +28,59 @@ namespace stocks_api.Repository
                         command.Parameters.Add(new SqlParameter("@SYMBOL", symbol));
 
                         conn.Open();
-                        SqlDataReader dr = command.ExecuteReader();
-                        while (dr.Read())
+                        using (SqlDataReader dr = command.ExecuteReader())
                         {
-                            global.symbol = dr[0].ToString();
-                            global.open = Convert.ToSingle(dr[1]);
-                            global.high = Convert.ToSingle(dr[2]);
-                            global.low = Convert.ToSingle(dr[3]);
-                            global.price = Convert.ToDecimal(dr[4]);
-                            global.volume = Convert.ToDecimal(dr[5]);
-                            global.latesttradingday = Convert.ToString(dr[6]);
-                            global.previousclose = Convert.ToSingle(dr[7]);
-                            global.change = Convert.ToSingle(dr[8]);
-                            global.changepercent = Convert.ToString(dr[9]);
+                            while (dr.Read())
+                            {
+                                GlobalQuotes global = new GlobalQuotes();
 
-                            list.Add(global);
+                                global.symbol = dr[0].ToString();
+                                global.open = Convert.ToSingle(dr[1]);
+                                global.high = Convert.ToSingle(dr[2]);
+                                global.low = Convert.ToSingle(dr[3]);
+                                global.price = Convert.ToDecimal(dr[4]);
+                                global.volume = Convert.ToDecimal(dr[5]);
+                                global.latesttradingday = Convert.ToString(dr[6]);
+                                global.previousclose = Convert.ToSingle(dr[7]);
+                                global.change = Convert.ToSingle(dr[8]);
+                                global.changepercent = Convert.ToString(dr[9]);
+
+                                list.Add(global);
+                            }
+                            conn.Close();
+                            conn.Dispose();
+                            if (!list.Any()) //caso não exista no banco
+                            {
+                                AddTicker(symbol);
+                            }
+                            return list;
                         }
-                        conn.Close();
-                        return list;
                     }
-
                 }
             }
-            catch(Exception er)
+            catch (Exception er)
             {
                 Console.WriteLine("GetGlobalQuotes -", er);
                 return null;
+            }
+        }
+
+        public void AddTicker(string symbol)
+        {
+            using (var conn = new SqlConnection(_connection))
+            {
+                using (var command = new SqlCommand("INSERT INTO TICKERS (ticker, LAST_UPDATE) VALUES (@TICKER, GETDATE())", conn))
+                {
+                    command.Parameters.Add(new SqlParameter("@TICKER", symbol.ToUpper()));
+
+                    conn.Open();
+                    SqlDataReader dr = command.ExecuteReader();
+                    while (dr.Read())
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    conn.Close();
+                }
             }
         }
     }
